@@ -37,8 +37,9 @@ class BboxHead(chainer.Chain):
         with self.init_scope():
             self.fc1 = L.Linear(1024, **fc_init)
             self.fc2 = L.Linear(1024, **fc_init)
+            # bbox regression is class-agnostic in Cascade R-CNN
             self.loc = L.Linear(
-                n_class * 4, initialW=initializers.Normal(0.001))
+                4, initialW=initializers.Normal(0.001))
             self.conf = L.Linear(n_class, initialW=initializers.Normal(0.01))
 
         self._n_class = n_class
@@ -86,7 +87,7 @@ class BboxHead(chainer.Chain):
         h = F.relu(self.fc2(h))
 
         locs = self.loc(h)
-        locs = F.reshape(locs, (locs.shape[0], -1, 4))
+        locs = F.reshape(locs, (locs.shape[0], 4))
         confs = self.conf(h)
         return locs, confs
 
@@ -199,6 +200,38 @@ class BboxHead(chainer.Chain):
             scores.append(score)
 
         return bboxes, labels, scores
+
+    def decode_bbox(self, rois, roi_indices, locs, scales, sizes):
+
+        rois = self.xp.vstack(rois)
+        roi_indices = self.xp.hstack(roi_indices)
+        locs = locs.array
+
+        bboxes = self.xp.empty_like(rois)
+        for i in range(len(scales)):
+            mask = roi_indices == i
+            roi = rois[mask]
+            loc = locs[mask]
+
+            bbox = roi / scales[i]
+            # tlbr -> yxhw
+            bbox[:, 2:] -= bbox[:, :2]
+            bbox[:, :2] += bbox[:, 2:] / 2
+            # offset
+            bbox[:, :2] += loc[:, :2] * bbox[:, 2:] * self._std[0]
+            bbox[:, 2:] *= self.xp.exp(
+                self.xp.minimum(loc[:, 2:] * self._std[1], exp_clip))
+            # yxhw -> tlbr
+            bbox[:, :2] -= bbox[:, 2:] / 2
+            bbox[:, 2:] += bbox[:, :2]
+            # clip
+            bbox[:, :2] = self.xp.maximum(bbox[:, :2], 0)
+            bbox[:, 2:] = self.xp.minimum(
+                bbox[:, 2:], self.xp.array(sizes[i]))
+
+            bboxes[mask] = bbox
+
+        return bboxes
 
 
 def bbox_head_loss_pre(rois, roi_indices, std, bboxes, labels):
