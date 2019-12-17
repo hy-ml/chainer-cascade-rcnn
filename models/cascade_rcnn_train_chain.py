@@ -3,12 +3,9 @@ from __future__ import division
 import numpy as np
 
 import chainer
-import chainer.functions as F
 
 from chainercv.links.model.fpn import bbox_head_loss_post
 from chainercv.links.model.fpn import bbox_head_loss_pre
-from chainercv.links.model.fpn import mask_head_loss_post
-from chainercv.links.model.fpn import mask_head_loss_pre
 from chainercv.links.model.fpn import rpn_loss
 
 
@@ -58,7 +55,8 @@ class CascadeRCNNTrainChain(chainer.Chain):
 
         loss = 0
         report_losses = {
-            'loss': 0, 'loss/bbox_head/loc': 0, 'loss/bbox_head/conf': 0
+            'loss': 0, 'loss/bbox_head/loc': 0, 'loss/bbox_head/conf': 0,
+            'loss/rpn/loc': rpn_loc_loss, 'loss/rpn/conf': rpn_conf_loss
         }
         for i, bbox_head in enumerate(self.model.bbox_heads):
             rois, roi_indices, head_gt_locs, head_gt_labels = \
@@ -73,10 +71,15 @@ class CascadeRCNNTrainChain(chainer.Chain):
 
             loss += (rpn_loc_loss + rpn_conf_loss +
                      head_loc_loss + head_conf_loss)
-        chainer.reporter.report({
-            'loss': loss,
-            'loss/rpn/loc': rpn_loc_loss, 'loss/rpn/conf': rpn_conf_loss,
-            'loss/bbox_head/loc': head_loc_loss,
-            'loss/bbox_head/conf': head_conf_loss},
-            self)
+            self._update_report(
+                report_losses, head_loc_loss, head_conf_loss, i)
+        chainer.reporter.report(report_losses, self)
         return loss
+
+    @staticmethod
+    def _update_report(report, loss_loc, loss_conf, i):
+        report['loss/bbox_head/loc'] += loss_loc
+        report['loss/bbox_head/conf'] += loss_conf
+        report['loss'] += (loss_loc + loss_conf)
+        report['loss/bbox_head/stage{}/loc'.format(i)] = loss_loc
+        report['loss/bbox_head/stage{}/conf'.format(i)] = loss_conf
