@@ -1,11 +1,13 @@
+import re
+
 from models import CascadeResNet50, CascadeRCNNResNet101
 
 
 def setup_model(cfg):
     n_fg_class = cfg.dataset.n_fg_class
     pretrained_model = cfg.model.pretrained_model
-    min_size = cfg.model.min_size
-    max_size = cfg.model.max_size
+    min_size = cfg.min_size
+    max_size = cfg.max_size
 
     if cfg.model.type == 'CascadeRCNNResNet50':
         model = CascadeResNet50(n_fg_class, pretrained_model,

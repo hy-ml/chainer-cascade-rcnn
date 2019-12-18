@@ -27,7 +27,7 @@ class BboxHead(chainer.Chain):
     _roi_size = 7
     _roi_sample_ratio = 2
 
-    def __init__(self, n_class, scales, std):
+    def __init__(self, n_class, scales, std, thresh):
         super(BboxHead, self).__init__()
 
         fc_init = {
@@ -44,7 +44,8 @@ class BboxHead(chainer.Chain):
 
         self._n_class = n_class
         self._scales = scales
-        self._std = std
+        self.std = std
+        self.thresh = thresh
 
     def forward(self, hs, rois, roi_indices):
         """Calculates RoIs.
@@ -178,9 +179,9 @@ class BboxHead(chainer.Chain):
             bbox[:, :, 2:] -= bbox[:, :, :2]
             bbox[:, :, :2] += bbox[:, :, 2:] / 2
             # offset
-            bbox[:, :, :2] += loc[:, :, :2] * bbox[:, :, 2:] * self._std[0]
+            bbox[:, :, :2] += loc[:, :, :2] * bbox[:, :, 2:] * self.std[0]
             bbox[:, :, 2:] *= self.xp.exp(
-                self.xp.minimum(loc[:, :, 2:] * self._std[1], exp_clip))
+                self.xp.minimum(loc[:, :, 2:] * self.std[1], exp_clip))
             # yxhw -> tlbr
             bbox[:, :, :2] -= bbox[:, :, 2:] / 2
             bbox[:, :, 2:] += bbox[:, :, :2]
@@ -218,9 +219,9 @@ class BboxHead(chainer.Chain):
             bbox[:, 2:] -= bbox[:, :2]
             bbox[:, :2] += bbox[:, 2:] / 2
             # offset
-            bbox[:, :2] += loc[:, :2] * bbox[:, 2:] * self._std[0]
+            bbox[:, :2] += loc[:, :2] * bbox[:, 2:] * self.std[0]
             bbox[:, 2:] *= self.xp.exp(
-                self.xp.minimum(loc[:, 2:] * self._std[1], exp_clip))
+                self.xp.minimum(loc[:, 2:] * self.std[1], exp_clip))
             # yxhw -> tlbr
             bbox[:, :2] -= bbox[:, 2:] / 2
             bbox[:, 2:] += bbox[:, :2]
@@ -234,7 +235,8 @@ class BboxHead(chainer.Chain):
         return bboxes
 
 
-def bbox_head_loss_pre(rois, roi_indices, std, bboxes, labels):
+def bbox_head_loss_pre(rois, roi_indices, std, bboxes, labels,
+                       thresh, batchsize_per_image=512, fg_ratio=0.25):
     """Loss function for Head (pre).
     This function processes RoIs for :func:`bbox_head_loss_post`.
     Args:
@@ -250,6 +252,9 @@ def bbox_head_loss_pre(rois, roi_indices, std, bboxes, labels):
             ground truth bounding boxes.
         labels (list of arrays): A list of arrays whose shape is
             :math:`(R_n,)`.
+        thresh (float): Threshold of foreground RoI.
+        batchsize_per_image (int): Batch size of RoIs of each image.
+        fg_ratio (float): Ratio of foreground RoIs.
      Returns:
          tuple of four lists:
          :obj:`rois`, :obj:`roi_indices`, :obj:`gt_locs`, and :obj:`gt_labels`.
@@ -262,11 +267,6 @@ def bbox_head_loss_pre(rois, roi_indices, std, bboxes, labels):
           * **roi_indices**: A list of arrays of shape :math:`(R'_l,)` \
               indicating the classes of ground truth.
     """
-
-    thresh = 0.5
-    batchsize_per_image = 512
-    fg_ratio = 0.25
-
     xp = cuda.get_array_module(*rois)
 
     n_level = len(rois)
@@ -369,7 +369,7 @@ def bbox_head_loss_post(
 
         n_sample = mask.sum()
         loc_loss += F.sum(smooth_l1(
-            locs[mask][xp.where(gt_label > 0)[0], gt_label[gt_label > 0]],
+            locs[mask][xp.where(gt_label > 0)[0]],
             gt_loc[gt_label > 0], 1)) / n_sample
         conf_loss += F.softmax_cross_entropy(confs[mask], gt_label)
 

@@ -1,1 +1,1 @@
-from configs.defaults import CN as cfg  # NOQA
+from .defaults import _C as cfg  # NOQA

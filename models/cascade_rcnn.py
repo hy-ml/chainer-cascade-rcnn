@@ -66,7 +66,7 @@ class CascadeRCNN(chainer.Chain):
             self.extractor = extractor
             self.rpn = rpn
             if self._run_bbox:
-                self.bbox_head = bbox_heads
+                self.bbox_heads = bbox_heads
 
         self._min_size = min_size
         self._max_size = max_size
@@ -152,6 +152,8 @@ class CascadeRCNN(chainer.Chain):
                         scales)]
                 outputs.update({'rois': rpn_rois_cpu})
 
+        # TODO: change into cascade
+        """
         if self._run_bbox:
             bbox_rois, bbox_roi_indices = self.bbox_head.distribute(
                 rpn_rois, rpn_roi_indices)
@@ -169,7 +171,7 @@ class CascadeRCNN(chainer.Chain):
             scores_cpu = [cuda.to_cpu(score) for score in scores]
             outputs.update({'bboxes': bboxes_cpu, 'labels': labels_cpu,
                             'scores': scores_cpu})
-
+        """
         return tuple([outputs[key] for key in self._return_values])
 
     def prepare(self, imgs):

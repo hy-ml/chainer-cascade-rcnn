@@ -43,6 +43,7 @@ class CascadeRCNNResNet(CascadeRCNN):
     """
 
     _stds = [(0.1, 0.2), (0.05, 0.1), (0.033, 0.067)]
+    _threshs = [0.5, 0.6, 0.7]
 
     def __init__(self, n_fg_class=None, pretrained_model=None,
                  return_values=['bboxes', 'labels', 'scores'],
@@ -57,9 +58,15 @@ class CascadeRCNNResNet(CascadeRCNN):
         base.remove_unused()
         extractor = FPN(
             base, len(base.pick), (1 / 4, 1 / 8, 1 / 16, 1 / 32, 1 / 64))
-        bbox_heads = chainer.ChainList(
-            [BboxHead(param['n_fg_class'] + 1, extractor.scales, std)
-             for std in self._stds])
+        # bbox_heads = chainer.ChainList(
+        #     [BboxHead(n_class=param['n_fg_class'] + 1, scales=extractor.scales,
+        #               std=std, thresh=thresh)
+        #      for std, thresh in zip(self._stds, self._threshs)])
+        bbox_heads = chainer.ChainList()
+        for std, thresh in zip(self._stds, self._threshs):
+            bbox_heads.append(
+                BboxHead(param['n_fg_class'] + 1, extractor.scales, std,
+                         thresh))
 
         super(CascadeRCNNResNet, self).__init__(
             extractor=extractor,

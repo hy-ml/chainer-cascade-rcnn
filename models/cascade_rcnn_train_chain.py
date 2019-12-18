@@ -4,9 +4,9 @@ import numpy as np
 
 import chainer
 
-from chainercv.links.model.fpn import bbox_head_loss_post
-from chainercv.links.model.fpn import bbox_head_loss_pre
-from chainercv.links.model.fpn import rpn_loss
+# from models import rpn_loss
+from models.rpn import rpn_loss
+from models.bbox_head import bbox_head_loss_pre, bbox_head_loss_post
 
 
 class CascadeRCNNTrainChain(chainer.Chain):
@@ -37,6 +37,7 @@ class CascadeRCNNTrainChain(chainer.Chain):
         with chainer.using_config('train', False):
             hs = self.model.extractor(x)
 
+        B = len(imgs)
         rpn_locs, rpn_confs = self.model.rpn(hs)
         anchors = self.model.rpn.anchors(h.shape[2:] for h in hs)
         rpn_loc_loss, rpn_conf_loss = rpn_loss(
@@ -61,13 +62,18 @@ class CascadeRCNNTrainChain(chainer.Chain):
         for i, bbox_head in enumerate(self.model.bbox_heads):
             rois, roi_indices, head_gt_locs, head_gt_labels = \
                 bbox_head_loss_pre(
-                    rois, roi_indices, bbox_head.std, bboxes, labels)
+                    rois, roi_indices, bbox_head.std, bboxes, labels,
+                    bbox_head.thresh)
             head_locs, head_confs = bbox_head(hs, rois, roi_indices)
             head_loc_loss, head_conf_loss = bbox_head_loss_post(
                 head_locs, head_confs,
                 roi_indices, head_gt_locs, head_gt_labels, B)
-            rois = bbox_head.decode_bbox(
+            bbox = bbox_head.decode_bbox(
                 rois, roi_indices, head_locs, scales, sizes)
+            last_idx = 0
+            for j, ri in enumerate(roi_indices):
+                rois[j] = bbox[last_idx:last_idx + ri.shape[0]]
+                last_idx += ri.shape[0]
 
             loss += (rpn_loc_loss + rpn_conf_loss +
                      head_loc_loss + head_conf_loss)
