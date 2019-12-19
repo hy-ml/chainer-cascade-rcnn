@@ -98,7 +98,7 @@ def main():
         trainer.extend(training.extensions.LogReport(trigger=log_interval))
         trainer.extend(training.extensions.PrintReport(
             ['epoch', 'iteration', 'main/loss',
-                'main/loss/loc', 'main/loss/conf']),
+                'main/loss/bbox_head/loc', 'main/loss/bbox_head/conf']),
             trigger=log_interval)
         pr = cProfile.Profile()
         pr.enable()
@@ -134,7 +134,8 @@ def main():
         trigger=(cfg.solver.n_iteration, 'iteration'))
     if args.tensorboard:
         trainer.extend(LogTensorboard(
-            ['lr', 'main/loss', 'main/loss/loc', 'main/loss/conf'],
+            ['lr', 'main/loss', 'main/loss/bbox_head/loc',
+                'main/loss/bbox_head/conf'],
             trigger=(10, 'iteration'), log_dir=get_logdir(args.config)))
 
     if len(cfg.solver.lr_step):
