@@ -28,6 +28,8 @@ _C.solver.momentum = 0.9
 _C.solver.hooks = ['WeightDecay']
 _C.solver.n_iteration = 90000
 _C.solver.lr_step = [60000, 80000]
+_C.solver.gradient_clipping_thresh = 5
+
 
 # misc
 _C.min_size = 800
