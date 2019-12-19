@@ -35,3 +35,6 @@ _C.max_size = 1333
 _C.n_gpu = 8
 _C.n_sample_per_gpu = 2
 _C.n_worker = 4
+_C.workspace_size = 512  # MB
+_C.autotune = True
+_C.cudnn_fast_batch_normalization = True

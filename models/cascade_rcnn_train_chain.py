@@ -4,7 +4,6 @@ import numpy as np
 
 import chainer
 
-# from models import rpn_loss
 from models.rpn import rpn_loss
 from models.bbox_head import bbox_head_loss_pre, bbox_head_loss_post
 
@@ -16,7 +15,7 @@ class CascadeRCNNTrainChain(chainer.Chain):
         with self.init_scope():
             self.model = model
 
-    def forward(self, imgs, bboxes, labels, scales):
+    def forward(self, imgs, bboxes, labels):
         B = len(imgs)
         pad_size = np.array(
             [im.shape[1:] for im in imgs]).max(axis=0)
@@ -69,7 +68,7 @@ class CascadeRCNNTrainChain(chainer.Chain):
                 head_locs, head_confs,
                 roi_indices, head_gt_locs, head_gt_labels, B)
             bbox = bbox_head.decode_bbox(
-                rois, roi_indices, head_locs, scales, sizes)
+                rois, roi_indices, head_locs, sizes)
             last_idx = 0
             for j, ri in enumerate(roi_indices):
                 rois[j] = bbox[last_idx:last_idx + ri.shape[0]]

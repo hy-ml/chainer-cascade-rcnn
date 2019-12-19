@@ -48,6 +48,11 @@ def main():
     cfg.merge_from_file(args.config)
     cfg.freeze()
 
+    chainer.cuda.set_max_workspace_size(cfg.workspace_size * 1024 * 1024)
+    chainer.config.autotune = cfg.autotune
+    chainer.config.cudnn_fast_batch_normalization = \
+        cfg.cudnn_fast_batch_normalization
+
     if hasattr(multiprocessing, 'set_start_method'):
         multiprocessing.set_start_method('forkserver')
         p = multiprocessing.Process()

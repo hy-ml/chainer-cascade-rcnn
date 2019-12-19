@@ -202,19 +202,18 @@ class BboxHead(chainer.Chain):
 
         return bboxes, labels, scores
 
-    def decode_bbox(self, rois, roi_indices, locs, scales, sizes):
-
+    def decode_bbox(self, rois, roi_indices, locs, sizes):
         rois = self.xp.vstack(rois)
         roi_indices = self.xp.hstack(roi_indices)
         locs = locs.array
 
         bboxes = self.xp.empty_like(rois)
-        for i in range(len(scales)):
+        for i in range(len(sizes)):
             mask = roi_indices == i
             roi = rois[mask]
             loc = locs[mask]
 
-            bbox = roi / scales[i]
+            bbox = roi
             # tlbr -> yxhw
             bbox[:, 2:] -= bbox[:, :2]
             bbox[:, :2] += bbox[:, 2:] / 2

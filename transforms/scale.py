@@ -11,4 +11,4 @@ class Sacle(object):
         img, scale = scale_img(
             img, self._min_size, self._max_size)
         bbox = bbox * scale
-        return img, bbox, label, scale
+        return img, bbox, label
