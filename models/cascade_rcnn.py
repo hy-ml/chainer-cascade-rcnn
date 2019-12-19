@@ -151,6 +151,27 @@ class CascadeRCNN(chainer.Chain):
                     zip(_flat_to_list(rpn_rois, rpn_roi_indices, len(imgs)),
                         scales)]
                 outputs.update({'rois': rpn_rois_cpu})
+            bbox_rois, bbox_roi_indices = self.bbox_heads[0].distribute(
+                rpn_rois, rpn_roi_indices)
+            for bbox_head in self.bbox_heads:
+                head_locs, head_confs = bbox_head(
+                    hs, bbox_rois, bbox_roi_indices)
+                bbox = bbox_head.decode_bbox(
+                    bbox_rois, bbox_roi_indices, head_locs, scales, sizes)
+                last_idx = 0
+                for j, ri in enumerate(bbox_roi_indices):
+                    bbox_rois[j] = bbox[last_idx:last_idx + ri.shape[0]]
+                    last_idx += ri.shape[0]
+            bboxes, labels, scores = self.bbox_heads[0].decode(
+                bbox_rois, bbox_roi_indices, head_locs, head_confs,
+                scales, sizes, self.nms_thresh, self.score_thresh)
+            bboxes_cpu = [
+                chainer.backends.cuda.to_cpu(bbox) for bbox in bboxes]
+            labels_cpu = [
+                chainer.backends.cuda.to_cpu(label) for label in labels]
+            scores_cpu = [cuda.to_cpu(score) for score in scores]
+            outputs.update({'bboxes': bboxes_cpu, 'labels': labels_cpu,
+                            'scores': scores_cpu})
 
         # TODO: change into cascade
         """
