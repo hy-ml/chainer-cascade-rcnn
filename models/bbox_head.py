@@ -42,8 +42,8 @@ class BboxHead(chainer.Chain):
                 4, initialW=initializers.Normal(0.001))
             self.conf = L.Linear(n_class, initialW=initializers.Normal(0.01))
 
-        self._n_class = n_class
         self._scales = scales
+        self.n_class = n_class
         self.std = std
         self.thresh = thresh
 
@@ -77,9 +77,9 @@ class BboxHead(chainer.Chain):
 
         if len(hs) == 0:
             locs = chainer.Variable(
-                self.xp.empty((0, self._n_class, 4), dtype=np.float32))
+                self.xp.empty((0, 4), dtype=np.float32))
             confs = chainer.Variable(
-                self.xp.empty((0, self._n_class), dtype=np.float32))
+                self.xp.empty((0, self.n_class), dtype=np.float32))
             return locs, confs
 
         h = F.concat(hs, axis=0)

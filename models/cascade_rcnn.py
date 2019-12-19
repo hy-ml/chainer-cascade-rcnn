@@ -162,6 +162,9 @@ class CascadeRCNN(chainer.Chain):
                 for j, ri in enumerate(bbox_roi_indices):
                     bbox_rois[j] = bbox[last_idx:last_idx + ri.shape[0]]
                     last_idx += ri.shape[0]
+            head_locs = F.broadcast_to(
+                head_locs, (self.bbox_heads[0].n_class, *(head_locs.shape)))
+            head_locs = head_locs.transpose(1, 0, 2)
             bboxes, labels, scores = self.bbox_heads[0].decode(
                 bbox_rois, bbox_roi_indices, head_locs, head_confs,
                 scales, sizes, self.nms_thresh, self.score_thresh)
