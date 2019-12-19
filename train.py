@@ -67,7 +67,7 @@ def main():
 
     transform = setup_transform(cfg, model.extractor.mean)
     train_dataset = TransformDataset(
-        setup_dataset(cfg, 'train'), ('img', 'bbox', 'label', 'scale'),
+        setup_dataset(cfg, 'train'), ('img', 'bbox', 'label'),
         transform)
     if args.benchmark:
         shuffle = False
