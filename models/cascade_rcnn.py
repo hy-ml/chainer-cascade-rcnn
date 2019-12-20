@@ -153,14 +153,16 @@ class CascadeRCNN(chainer.Chain):
                 outputs.update({'rois': rpn_rois_cpu})
             bbox_rois, bbox_roi_indices = self.bbox_heads[0].distribute(
                 rpn_rois, rpn_roi_indices)
-            for bbox_head in self.bbox_heads:
+            for j, bbox_head in enumerate(self.bbox_heads):
                 head_locs, head_confs = bbox_head(
                     hs, bbox_rois, bbox_roi_indices)
                 bbox = bbox_head.decode_bbox(
-                    bbox_rois, bbox_roi_indices, head_locs, scales, sizes)
+                    bbox_rois, bbox_roi_indices, head_locs, sizes)
+                if j == len(self.bbox_heads) - 1:
+                    break
                 last_idx = 0
-                for j, ri in enumerate(bbox_roi_indices):
-                    bbox_rois[j] = bbox[last_idx:last_idx + ri.shape[0]]
+                for k, ri in enumerate(bbox_roi_indices):
+                    bbox_rois[k] = bbox[last_idx:last_idx + ri.shape[0]]
                     last_idx += ri.shape[0]
             head_locs = F.broadcast_to(
                 head_locs, (self.bbox_heads[0].n_class, *(head_locs.shape)))
