@@ -158,7 +158,6 @@ class CascadeRCNN(chainer.Chain):
                 bbox = bbox_head.decode_bbox(
                     bbox_rois, bbox_roi_indices, head_locs,
                     [size * scale for size, scale in zip(sizes, scales)])
-                break
                 if j == len(self.bbox_heads) - 1:
                     break
                 last_idx = 0
