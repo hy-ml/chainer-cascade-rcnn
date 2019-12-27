@@ -11,6 +11,11 @@ def setup_dataset(cfg, split):
     else:
         raise ValueError()
 
+    # FIXME: remove
+    if cfg.debug:
+        dataset = COCOBboxDataset(split='debug', year='2017')
+        return dataset
+
     if dataset_type == 'COCO':
         if split == 'train':
             dataset = COCOBboxDataset(split='train', year='2017')

@@ -1,4 +1,3 @@
-
 from __future__ import division
 
 import numpy as np
@@ -139,7 +138,7 @@ class CascadeRCNN(chainer.Chain):
         """
         outputs = {}
 
-        sizes = [img.shape[1:] for img in imgs]
+        sizes = np.array([img.shape[1:] for img in imgs])
         x, scales = self.prepare(imgs)
 
         with chainer.using_config('train', False), chainer.no_backprop_mode():
@@ -157,7 +156,9 @@ class CascadeRCNN(chainer.Chain):
                 head_locs, head_confs = bbox_head(
                     hs, bbox_rois, bbox_roi_indices)
                 bbox = bbox_head.decode_bbox(
-                    bbox_rois, bbox_roi_indices, head_locs, sizes)
+                    bbox_rois, bbox_roi_indices, head_locs,
+                    [size * scale for size, scale in zip(sizes, scales)])
+                break
                 if j == len(self.bbox_heads) - 1:
                     break
                 last_idx = 0

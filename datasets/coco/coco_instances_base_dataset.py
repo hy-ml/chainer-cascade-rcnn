@@ -32,8 +32,13 @@ class COCOInstancesBaseDataset(GetterDataset):
             img_split = 'val'
         else:
             img_split = 'train'
-        if data_dir == 'auto':
-            data_dir = get_coco(split, img_split, year, 'instances')
+        # FIXME: remove if
+        if split != 'debug':
+            if data_dir == 'auto':
+                data_dir = get_coco(split, img_split, year, 'instances')
+        else:
+            from configs.path_catalog import coco_dir
+            data_dir = coco_dir
 
         self.img_root = os.path.join(
             data_dir, 'images', '{}{}'.format(img_split, year))
