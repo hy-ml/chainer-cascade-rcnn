@@ -22,12 +22,15 @@ _C.dataset.n_fg_class = 0
 # solver
 _C.solver = CN()
 _C.solver.optimizer = 'MomentumSGD'
-_C.solver.base_lr = 0.00125  # 0.02 / 16
+_C.solver.base_lr = 0.02
 _C.solver.weight_decay = 0.0001
 _C.solver.momentum = 0.9
 _C.solver.hooks = ['WeightDecay']
 _C.solver.n_iteration = 90000
+_C.solver.lr_gamma = 0.1
 _C.solver.lr_step = [60000, 80000]
+_C.solver.lr_warm_up_duration = 500
+_C.solver.lr_warm_up_rate = 1 / 3
 _C.solver.gradient_clipping_thresh = 5
 
 
@@ -40,5 +43,6 @@ _C.n_worker = 4
 _C.workspace_size = 512  # MB
 _C.autotune = True
 _C.cudnn_fast_batch_normalization = True
+_C.path = ''  # this value should be overwritten
 # FIXME: remove
 _C.debug = False
