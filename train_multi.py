@@ -151,8 +151,12 @@ def main():
             trigger=(cfg.solver.n_iteration, 'iteration'))
         if args.tensorboard:
             trainer.extend(LogTensorboard(
-                ['lr', 'main/loss', 'main/loss/bbox_head/loc',
-                    'main/loss/bbox_head/conf'],
+                ['lr', 'main/loss', 
+                 'main/loss/bbox_head/loc', 'main/loss/bbox_head/conf',
+                 'main/loss/bbox_head/stage0/loc', 'main/loss/bbox_head/stage0/conf',
+                 'main/loss/bbox_head/stage1/loc', 'main/loss/bbox_head/stage1/conf',
+                 'main/loss/bbox_head/stage2/loc', 'main/loss/bbox_head/stage2/conf',
+                 ],
                 trigger=(10, 'iteration'), log_dir=get_logdir(args.config)))
 
     if len(cfg.solver.lr_step):
