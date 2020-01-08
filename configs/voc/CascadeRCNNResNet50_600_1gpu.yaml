@@ -1,0 +1,19 @@
+model:
+  type: 'CascadeRCNNResNet50'
+
+dataset:
+  train: 'VOC'
+  eval: 'VOC'
+  n_fg_class: 20
+
+solver:
+  base_lr: 0.01  # 0.02 / 2
+  n_iteration: 120000
+  lr_step: [80000, 100000]
+  hooks: ['WeightDecay', 'GradientClipping']
+
+min_size: 600
+max_size: 1000
+n_gpu: 1
+n_sample_per_gpu: 2
+n_worker: 2
