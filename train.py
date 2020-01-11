@@ -114,7 +114,7 @@ def main():
             '{0}/train.cprofile'.format(outdir))
         exit()
 
-    setup_extension(cfg, trainer, None)
+    setup_extension(cfg, trainer, model, None)
 
     if args.resume:
         serializers.load_npz(args.resume, trainer, strict=False)
