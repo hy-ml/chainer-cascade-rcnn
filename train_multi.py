@@ -12,13 +12,13 @@ import chainermn
 from chainercv.chainer_experimental.datasets.sliceable import TransformDataset
 
 from configs import cfg
-from utils.path import get_outdir, get_logdir
+from utils.path import get_outdir
 from models import CascadeRCNNTrainChain
-from extensions import LogTensorboard
 from setup_helpers import setup_dataset
 from setup_helpers import setup_model, freeze_params
 from setup_helpers import setup_transform
 from setup_helpers import setup_optimizer, add_hook_optimizer
+from setup_helpers import setup_extension
 
 
 def converter(batch, device=None):
@@ -30,8 +30,6 @@ def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('config', type=str,
                         help='Path to the config file.')
-    parser.add_argument('--tensorboard', type=bool, default=True,
-                        help='Whether use Tensorboard. Default is True.')
     parser.add_argument('--resume', type=str)
     parser.add_argument('--benchmark', action='store_true',
                         help='Benchmark option.')
@@ -46,6 +44,7 @@ def parse_args():
 def main():
     args = parse_args()
     cfg.merge_from_file(args.config)
+    cfg.path = args.config
     cfg.freeze()
 
     chainer.cuda.set_max_workspace_size(cfg.workspace_size * 1024 * 1024)
@@ -132,36 +131,7 @@ def main():
             '{0}/train_multi_rank_{1}.cprofile'.format(outdir, comm.rank))
         exit()
 
-    # extention
-    if comm.rank == 0:
-        log_interval = 10, 'iteration'
-        trainer.extend(training.extensions.LogReport(trigger=log_interval))
-        trainer.extend(training.extensions.observe_lr(), trigger=log_interval)
-        trainer.extend(training.extensions.PrintReport(
-            ['epoch', 'iteration', 'lr', 'main/loss',
-             'main/loss/bbox_head/loc', 'main/loss/bbox_head/conf']),
-            trigger=log_interval)
-        trainer.extend(training.extensions.ProgressBar(update_interval=10))
-
-        trainer.extend(training.extensions.snapshot(),
-                       trigger=(10000, 'iteration'))
-        trainer.extend(
-            training.extensions.snapshot_object(
-                model, 'model_iter_{.updater.iteration}'),
-            trigger=(cfg.solver.n_iteration, 'iteration'))
-        if args.tensorboard:
-            trainer.extend(LogTensorboard(
-                ['lr', 'main/loss', 
-                 'main/loss/bbox_head/loc', 'main/loss/bbox_head/conf',
-                 'main/loss/bbox_head/stage0/loc', 'main/loss/bbox_head/stage0/conf',
-                 'main/loss/bbox_head/stage1/loc', 'main/loss/bbox_head/stage1/conf',
-                 'main/loss/bbox_head/stage2/loc', 'main/loss/bbox_head/stage2/conf',
-                 ],
-                trigger=(10, 'iteration'), log_dir=get_logdir(args.config)))
-
-    if len(cfg.solver.lr_step):
-        trainer.extend(training.extensions.MultistepShift(
-            'lr', 0.1, cfg.solver.lr_step, cfg.solver.base_lr, optimizer))
+    setup_extension(cfg, trainer, model, comm)
 
     if args.resume:
         serializers.load_npz(args.resume, trainer, strict=False)

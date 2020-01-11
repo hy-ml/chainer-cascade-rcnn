@@ -10,6 +10,7 @@ solver:
   base_lr: 0.005  # 0.02 / 4
   n_iteration: 60000
   lr_step: [40000, 50000]
+  lr_warm_up_duration: 2000  # 500 * 4
 
 min_size: 600
 max_size: 1000
