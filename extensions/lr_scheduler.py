@@ -1,5 +1,4 @@
 from chainer.training import extension
-from chainercv.chainer_experimental.training.extensions import make_shift
 
 
 # TODO: support option not to use warm up
@@ -11,7 +10,6 @@ class LrScheduler(extension.Extension):
         self._warm_up_duration = warm_up_duration
         self._warm_up_rate = warm_up_rate
 
-    # @make_shift('lr')
     def __call__(self, trainer):
         iteration = trainer.updater.iteration
         if iteration < self._warm_up_duration:
