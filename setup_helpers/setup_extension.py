@@ -4,7 +4,7 @@ from utils.path import get_logdir
 from extensions import LogTensorboard, LrScheduler
 
 
-def setup_extension(cfg, trainer, comm=None):
+def setup_extension(cfg, trainer, model, comm=None):
     if comm is None or comm.rank == 0:
         log_interval = 10, 'iteration'
         trainer.extend(training.extensions.LogReport(trigger=log_interval))
@@ -19,7 +19,7 @@ def setup_extension(cfg, trainer, comm=None):
                        trigger=(10000, 'iteration'))
         trainer.extend(
             training.extensions.snapshot_object(
-                trainer.model, 'model_iter_{.updater.iteration}'),
+                model, 'model_iter_{.updater.iteration}'),
             trigger=(cfg.solver.n_iteration, 'iteration'))
         trainer.extend(
             LogTensorboard([
@@ -36,4 +36,4 @@ def setup_extension(cfg, trainer, comm=None):
 
     trainer.extend(LrScheduler(
         cfg.solver.base_lr, cfg.solver.lr_gamma, cfg.solver.lr_step,
-        cfg.solver.lr_warmup_duration, cfg.solver.lr_warm_up_rate))
+        cfg.solver.lr_warm_up_duration, cfg.solver.lr_warm_up_rate))

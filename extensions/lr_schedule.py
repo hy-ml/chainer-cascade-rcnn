@@ -8,8 +8,8 @@ class LrScheduler(extension.Extension):
         self._base_lr = base_lr
         self._gamma = gamma
         self._step = step
-        self._warmup_duration = warm_up_duration
-        self._warmup_rate = warm_up_rate
+        self._warm_up_duration = warm_up_duration
+        self._warm_up_rate = warm_up_rate
 
     @make_shift('lr')
     def __call__(self, trainer):

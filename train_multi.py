@@ -131,7 +131,7 @@ def main():
             '{0}/train_multi_rank_{1}.cprofile'.format(outdir, comm.rank))
         exit()
 
-    setup_extension(cfg, trainer, comm)
+    setup_extension(cfg, trainer, model, comm)
 
     if args.resume:
         serializers.load_npz(args.resume, trainer, strict=False)
