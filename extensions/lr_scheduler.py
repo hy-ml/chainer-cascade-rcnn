@@ -11,7 +11,7 @@ class LrScheduler(extension.Extension):
         self._warm_up_duration = warm_up_duration
         self._warm_up_rate = warm_up_rate
 
-    @make_shift('lr')
+    # @make_shift('lr')
     def __call__(self, trainer):
         iteration = trainer.updater.iteration
         if iteration < self._warm_up_duration:
@@ -29,5 +29,5 @@ class LrScheduler(extension.Extension):
 
     def _update_value(self, trainer, value):
         optimizer = trainer.updater.get_optimizer('main')
-        setattr(optimizer, self._attr, value)
+        setattr(optimizer, 'lr', value)
         self._last_value = value
