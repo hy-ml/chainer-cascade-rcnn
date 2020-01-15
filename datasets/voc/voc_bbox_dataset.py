@@ -70,9 +70,10 @@ class VOCBboxDataset(GetterDataset):
 
         self.add_getter('img', self._get_image)
         self.add_getter(('bbox', 'label', 'difficult'), self._get_annotations)
+        self.add_getter('aspect_ratio', self._get_aspect_ratio)
 
         if not return_difficult:
-            self.keys = ('img', 'bbox', 'label')
+            self.keys = ('img', 'bbox', 'label', 'aspect_ratio')
 
     def __len__(self):
         return len(self.ids)
@@ -109,3 +110,12 @@ class VOCBboxDataset(GetterDataset):
         # When `use_difficult==False`, all elements in `difficult` are False.
         difficult = np.array(difficult, dtype=np.bool)
         return bbox, label, difficult
+
+    def _get_aspect_ratio(self, i):
+        id_ = self.ids[i]
+        anno = ET.parse(
+            os.path.join(self.data_dir, 'Annotations', id_ + '.xml'))
+        size = anno.find('size')
+        width = size.find('width')
+        height = size.find('height')
+        return int(width.text) / int(height.text)

@@ -55,7 +55,7 @@ class COCOBboxDataset(COCOInstancesBaseDataset):
                  use_crowded=False, return_area=False, return_crowded=False):
         super(COCOBboxDataset, self).__init__(
             data_dir, split, year, use_crowded)
-        keys = ('img', 'bbox', 'label')
+        keys = ('img', 'bbox', 'label', 'aspect_ratio')
         if return_area:
             keys += ('area',)
         if return_crowded:
