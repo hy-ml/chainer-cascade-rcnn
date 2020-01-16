@@ -18,6 +18,7 @@ _C.dataset = CN()
 _C.dataset.train = ''
 _C.dataset.eval = ''
 _C.dataset.n_fg_class = 0
+_C.dataset.order_sampler = ''
 
 # solver
 _C.solver = CN()

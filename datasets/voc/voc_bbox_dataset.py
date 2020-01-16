@@ -72,7 +72,9 @@ class VOCBboxDataset(GetterDataset):
         self.add_getter(('bbox', 'label', 'difficult'), self._get_annotations)
         self.add_getter('aspect_ratio', self._get_aspect_ratio)
 
-        if not return_difficult:
+        if return_difficult:
+            self.keys = ('img', 'bbox', 'label', 'difficult', 'aspect_ratio')
+        else:
             self.keys = ('img', 'bbox', 'label', 'aspect_ratio')
 
     def __len__(self):
