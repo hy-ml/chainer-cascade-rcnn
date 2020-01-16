@@ -4,8 +4,6 @@ import numpy as np
 import _init_path  # NOQA
 from datasets import COCOBboxDataset
 
-split = 'val'
-
 
 def parse_args():
     parser = argparse.ArgumentParser()
