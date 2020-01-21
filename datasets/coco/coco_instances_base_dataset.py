@@ -64,6 +64,7 @@ class COCOInstancesBaseDataset(GetterDataset):
         self.add_getter(
             ['bbox', 'label', 'area', 'crowded'],
             self._get_annotations)
+        self.add_getter('aspect_ratio', self._get_aspect_ratio)
 
     def __len__(self):
         return len(self.ids)
@@ -137,6 +138,11 @@ class COCOInstancesBaseDataset(GetterDataset):
         area = area[keep_mask]
         crowded = crowded[keep_mask]
         return bbox, label, area, crowded
+
+    def _get_aspect_ratio(self, i):
+        width = self.id_to_prop[self.ids[i]]['width']
+        height = self.id_to_prop[self.ids[i]]['height']
+        return width / height
 
     def _segm_to_mask(self, segm, size):
         # Copied from pycocotools.coco.COCO.annToMask

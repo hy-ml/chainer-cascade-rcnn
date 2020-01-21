@@ -14,6 +14,7 @@ from configs import cfg
 from utils.path import get_outdir
 from models import CascadeRCNNTrainChain
 from setup_helpers import setup_dataset
+from setup_helpers import setup_order_sampler
 from setup_helpers import setup_model, freeze_params
 from setup_helpers import setup_transform
 from setup_helpers import setup_optimizer, add_hook_optimizer
@@ -64,18 +65,33 @@ def main():
     train_chain.to_gpu(args.gpu)
 
     transform = setup_transform(cfg, model.extractor.mean)
-    train_dataset = TransformDataset(
-        setup_dataset(cfg, 'train'), ('img', 'bbox', 'label'),
-        transform)
+    dataset = setup_dataset(cfg, 'train')
+    transform = setup_transform(cfg, model.extractor.mean)
+    train_dataset = dataset.slice[:, ('img', 'bbox', 'label')]
+    train_dataset = TransformDataset(train_dataset, ('img', 'bbox', 'label'),
+                                     transform)
+
     if args.benchmark:
         shuffle = False
     else:
         shuffle = True
 
+    order_sampler = setup_order_sampler(cfg, dataset)
+    if order_sampler is None:
+        shuffle = shuffle
+    else:
+        shuffle = None
+
     train_iter = chainer.iterators.MultiprocessIterator(
         train_dataset, cfg.n_sample_per_gpu,
         n_processes=cfg.n_worker,
-        shared_mem=100 * 1000 * 1000 * 4, shuffle=shuffle)
+        shared_mem=100 * 1000 * 1000 * 4, shuffle=shuffle,
+        order_sampler=order_sampler)
+    # train_iter = chainer.iterators.MultiprocessIterator(
+    #     train_dataset, cfg.n_sample_per_gpu,
+    #     n_processes=cfg.n_worker,
+    #     shared_mem=100 * 1000 * 1000 * 4, shuffle=shuffle)
+
     optimizer = setup_optimizer(cfg)
     optimizer = optimizer.setup(train_chain)
     optimizer = add_hook_optimizer(optimizer, cfg)

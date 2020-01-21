@@ -15,6 +15,7 @@ from configs import cfg
 from utils.path import get_outdir
 from models import CascadeRCNNTrainChain
 from setup_helpers import setup_dataset
+from setup_helpers import setup_order_sampler
 from setup_helpers import setup_model, freeze_params
 from setup_helpers import setup_transform
 from setup_helpers import setup_optimizer, add_hook_optimizer
@@ -70,26 +71,44 @@ def main():
     chainer.cuda.get_device_from_id(device).use()
     train_chain.to_gpu()
 
-    transform = setup_transform(cfg, model.extractor.mean)
-    train_dataset = TransformDataset(
-        setup_dataset(cfg, 'train'), ('img', 'bbox', 'label'),
-        transform)
+    # TODO: refactor not to split datasets
+    dataset = setup_dataset(cfg, 'train')
+    # transform = setup_transform(cfg, model.extractor.mean)
+    # train_dataset = dataset.slice[:, ('img', 'bbox', 'label')]
+    # train_dataset = TransformDataset(train_dataset, ('img', 'bbox', 'label'),
+    #                                  transform)
+
     if args.benchmark:
         shuffle = False
     else:
         shuffle = True
 
     if comm.rank == 0:
-        indices = np.arange(len(train_dataset))
+        # indices = np.arange(len(train_dataset))
+        indices = np.arange(len(dataset))
     else:
         indices = None
 
     indices = chainermn.scatter_dataset(indices, comm, shuffle=shuffle)
-    train_dataset = train_dataset.slice[indices]
+    # train_dataset = train_dataset.slice[indices]
+    dataset = dataset.slice[indices]
+
+    transform = setup_transform(cfg, model.extractor.mean)
+    train_dataset = dataset.slice[:, ('img', 'bbox', 'label')]
+    train_dataset = TransformDataset(train_dataset, ('img', 'bbox', 'label'),
+                                     transform)
+
+    order_sampler = setup_order_sampler(cfg, dataset)
+    if order_sampler is None:
+        shuffle = shuffle
+    else:
+        shuffle = None
+
     train_iter = chainer.iterators.MultiprocessIterator(
         train_dataset, cfg.n_sample_per_gpu,
         n_processes=cfg.n_worker,
-        shared_mem=100 * 1000 * 1000 * 4, shuffle=shuffle)
+        shared_mem=100 * 1000 * 1000 * 4, shuffle=shuffle,
+        order_sampler=order_sampler)
     optimizer = chainermn.create_multi_node_optimizer(
         setup_optimizer(cfg), comm)
     optimizer = optimizer.setup(train_chain)
