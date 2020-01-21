@@ -33,8 +33,8 @@ def parse_args():
     parser.add_argument('--resume', type=str)
     parser.add_argument('--benchmark', action='store_true',
                         help='Benchmark option.')
-    parser.add_argument('--benchmark_n_iteration', type=int, default=500,
-                        help='Iteration in benchmark option. Default is 500.')
+    parser.add_argument('--benchmark_n_iteration', type=int, default=50,
+                        help='Iteration in benchmark option. Default is 50.')
     parser.add_argument('--n_print_profile', type=int, default=100,
                         help='Default is 100.')
     parser.add_argument('--gpu', type=int, default=0)
