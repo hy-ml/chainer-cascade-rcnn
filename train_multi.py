@@ -12,13 +12,14 @@ import chainermn
 from chainercv.chainer_experimental.datasets.sliceable import TransformDataset
 
 from configs import cfg
-from utils.path import get_outdir, get_logdir
+from utils.path import get_outdir
 from models import CascadeRCNNTrainChain
-from extensions import LogTensorboard
 from setup_helpers import setup_dataset
+from setup_helpers import setup_order_sampler
 from setup_helpers import setup_model, freeze_params
 from setup_helpers import setup_transform
 from setup_helpers import setup_optimizer, add_hook_optimizer
+from setup_helpers import setup_extension
 
 
 def converter(batch, device=None):
@@ -30,13 +31,11 @@ def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('config', type=str,
                         help='Path to the config file.')
-    parser.add_argument('--tensorboard', type=bool, default=True,
-                        help='Whether use Tensorboard. Default is True.')
     parser.add_argument('--resume', type=str)
     parser.add_argument('--benchmark', action='store_true',
                         help='Benchmark option.')
-    parser.add_argument('--benchmark_n_iteration', type=int, default=500,
-                        help='Iteration in benchmark option. Default is 500.')
+    parser.add_argument('--benchmark_n_iteration', type=int, default=50,
+                        help='Iteration in benchmark option. Default is 50.')
     parser.add_argument('--n_print_profile', type=int, default=100,
                         help='Default is 100.')
     args = parser.parse_args()
@@ -46,6 +45,7 @@ def parse_args():
 def main():
     args = parse_args()
     cfg.merge_from_file(args.config)
+    cfg.path = args.config
     cfg.freeze()
 
     chainer.cuda.set_max_workspace_size(cfg.workspace_size * 1024 * 1024)
@@ -71,26 +71,44 @@ def main():
     chainer.cuda.get_device_from_id(device).use()
     train_chain.to_gpu()
 
-    transform = setup_transform(cfg, model.extractor.mean)
-    train_dataset = TransformDataset(
-        setup_dataset(cfg, 'train'), ('img', 'bbox', 'label'),
-        transform)
+    # TODO: refactor not to split datasets
+    dataset = setup_dataset(cfg, 'train')
+    # transform = setup_transform(cfg, model.extractor.mean)
+    # train_dataset = dataset.slice[:, ('img', 'bbox', 'label')]
+    # train_dataset = TransformDataset(train_dataset, ('img', 'bbox', 'label'),
+    #                                  transform)
+
     if args.benchmark:
         shuffle = False
     else:
         shuffle = True
 
     if comm.rank == 0:
-        indices = np.arange(len(train_dataset))
+        # indices = np.arange(len(train_dataset))
+        indices = np.arange(len(dataset))
     else:
         indices = None
 
     indices = chainermn.scatter_dataset(indices, comm, shuffle=shuffle)
-    train_dataset = train_dataset.slice[indices]
+    # train_dataset = train_dataset.slice[indices]
+    dataset = dataset.slice[indices]
+
+    transform = setup_transform(cfg, model.extractor.mean)
+    train_dataset = dataset.slice[:, ('img', 'bbox', 'label')]
+    train_dataset = TransformDataset(train_dataset, ('img', 'bbox', 'label'),
+                                     transform)
+
+    order_sampler = setup_order_sampler(cfg, dataset)
+    if order_sampler is None:
+        shuffle = shuffle
+    else:
+        shuffle = None
+
     train_iter = chainer.iterators.MultiprocessIterator(
         train_dataset, cfg.n_sample_per_gpu,
         n_processes=cfg.n_worker,
-        shared_mem=100 * 1000 * 1000 * 4, shuffle=shuffle)
+        shared_mem=100 * 1000 * 1000 * 4, shuffle=shuffle,
+        order_sampler=order_sampler)
     optimizer = chainermn.create_multi_node_optimizer(
         setup_optimizer(cfg), comm)
     optimizer = optimizer.setup(train_chain)
@@ -132,36 +150,7 @@ def main():
             '{0}/train_multi_rank_{1}.cprofile'.format(outdir, comm.rank))
         exit()
 
-    # extention
-    if comm.rank == 0:
-        log_interval = 10, 'iteration'
-        trainer.extend(training.extensions.LogReport(trigger=log_interval))
-        trainer.extend(training.extensions.observe_lr(), trigger=log_interval)
-        trainer.extend(training.extensions.PrintReport(
-            ['epoch', 'iteration', 'lr', 'main/loss',
-             'main/loss/bbox_head/loc', 'main/loss/bbox_head/conf']),
-            trigger=log_interval)
-        trainer.extend(training.extensions.ProgressBar(update_interval=10))
-
-        trainer.extend(training.extensions.snapshot(),
-                       trigger=(10000, 'iteration'))
-        trainer.extend(
-            training.extensions.snapshot_object(
-                model, 'model_iter_{.updater.iteration}'),
-            trigger=(cfg.solver.n_iteration, 'iteration'))
-        if args.tensorboard:
-            trainer.extend(LogTensorboard(
-                ['lr', 'main/loss', 
-                 'main/loss/bbox_head/loc', 'main/loss/bbox_head/conf',
-                 'main/loss/bbox_head/stage0/loc', 'main/loss/bbox_head/stage0/conf',
-                 'main/loss/bbox_head/stage1/loc', 'main/loss/bbox_head/stage1/conf',
-                 'main/loss/bbox_head/stage2/loc', 'main/loss/bbox_head/stage2/conf',
-                 ],
-                trigger=(10, 'iteration'), log_dir=get_logdir(args.config)))
-
-    if len(cfg.solver.lr_step):
-        trainer.extend(training.extensions.MultistepShift(
-            'lr', 0.1, cfg.solver.lr_step, cfg.solver.base_lr, optimizer))
+    setup_extension(cfg, trainer, model, comm)
 
     if args.resume:
         serializers.load_npz(args.resume, trainer, strict=False)
