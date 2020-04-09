@@ -26,8 +26,8 @@ If you train models in COCO using this repository, it would be very helpful if y
 
 | Model | Train dataset | mAP (PASCAL VOC2007 metric) |
 |:-:|:-:|:-:|
-| RetinaNet ResNet50 | VOC2007\&2012 trainval | 75.6 % |
-| RetinaNet ResNet101 | VOC2007\&2012 trainval | 77.3 % |
+| RetinaNet ResNet50 | VOC2007\&2012 trainval | 73.4 % |
+| RetinaNet ResNet101 | VOC2007\&2012 trainval | - |
 
 ## Pre-trained model
 
