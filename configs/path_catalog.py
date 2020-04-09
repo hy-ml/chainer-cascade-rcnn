@@ -10,7 +10,7 @@ logdir = './log'
 
 gdrive_ids = {
     'VOC': {
-        'CascadeRCNNResNet50': '',
+        'CascadeRCNNResNet50': '1dZkuyHGAcvkULxEK8fg28pkkerf5P6U6',
         'CascadeRCNNResNet101': '',
     },
     'COCO': {

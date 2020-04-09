@@ -1,4 +1,4 @@
-from .setup_dataset import setup_dataset  # NOQA
+from .setup_dataset import setup_dataset, setup_order_sampler  # NOQA
 from .setup_model import setup_model, freeze_params  # NOQA
 from .setup_extension import setup_extension  # NOQA
 from .setup_transform import setup_transform  # NOQA

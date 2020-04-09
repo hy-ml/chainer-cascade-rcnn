@@ -2,7 +2,12 @@
 .idea
 
 __pycache__/
-out/
-log/
 *.pyc
+
+/out/
+/log/
+/benchmark_out/
+/dataset/
+
 *.sh
+*tmp*

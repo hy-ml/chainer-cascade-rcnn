@@ -11,7 +11,7 @@ from setup_helpers import setup_model, setup_dataset
 
 def eval_voc(out_values, rest_values):
     pred_bboxes, pred_labels, pred_scores = out_values
-    gt_bboxes, gt_labels, gt_difficults = rest_values
+    gt_bboxes, gt_labels, gt_difficults, _ = rest_values
 
     result = eval_detection_voc(
         pred_bboxes, pred_labels, pred_scores,

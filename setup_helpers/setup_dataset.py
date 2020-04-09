@@ -1,6 +1,8 @@
-from chainer.datasets import ConcatenatedDataset
+# from chainer.datasets import ConcatenatedDataset
+from chainercv.chainer_experimental.datasets.sliceable import ConcatenatedDataset
 
 from datasets import COCOBboxDataset, VOCBboxDataset
+from datasets import AspectRatioOrderSampler
 
 
 def setup_dataset(cfg, split):
@@ -41,3 +43,18 @@ def setup_dataset(cfg, split):
         raise ValueError()
 
     return dataset
+
+
+def setup_order_sampler(cfg, dataset=None):
+    if cfg.dataset.order_sampler == 'AspectRatioOrderSampler':
+        assert dataset is not None
+        bs = cfg.n_sample_per_gpu
+        order_sampler = AspectRatioOrderSampler(dataset, bs)
+    # use default order sampler: ShuffleOrderSampler
+    elif cfg.dataset.order_sampler == '':
+        order_sampler = None
+    else:
+        raise ValueError('Not support order sampler: {}.'.format(
+            cfg.dataset.order_sampler))
+
+    return order_sampler
