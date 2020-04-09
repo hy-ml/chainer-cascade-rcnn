@@ -42,8 +42,8 @@ If you train models in COCO using this repository, it would be very helpful if y
 |:-:|:-:|
 | COCO2017 train | [~~RetinaNet ResNet50~~]()
 | COCO2017 train | [~~RetinaNet ResNet101~~]()
-| VOC2007\&2012 trainval | [RetinaNet ResNet50](https://drive.google.com/open?id=1jQJSnkMidiIzQnulwK8VgOum3AGnEHDy) |
-| VOC2007\&2012 trainval | [RetinaNet ResNet101](https://drive.google.com/open?id=1Bg3_8i3BIQcHoFHPoxGdC3ehZ215zmH-) |
+| VOC2007\&2012 trainval | [RetinaNet ResNet50](https://drive.google.com/open?id=1dZkuyHGAcvkULxEK8fg28pkkerf5P6U6) |
+| VOC2007\&2012 trainval | [~~RetinaNet ResNet101~~]() |
 
 ## Installation
 
